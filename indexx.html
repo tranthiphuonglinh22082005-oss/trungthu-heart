@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Trái tim Trung Thu 💖</title>
+<style>
+body { margin:0; overflow:hidden; background: radial-gradient(ellipse at center, #000 60%, #111); }
+canvas { display:block; }
+</style>
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/three@0.156.0/build/three.min.js"></script>
+<script>
+// === SCENE SETUP ===
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
+camera.position.z = 200;
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// === HEART PARTICLES LỚN + ĐẬP ===
+function createHeartParticles(){
+    const points=[];
+    const step=0.01;
+    for(let s=-Math.PI;s<Math.PI;s+=step){
+        for(let r=0;r<16;r+=0.2){
+            const x=(16-r)*Math.pow(Math.sin(s),3);
+            const y=(13-r/2)*Math.cos(s)-5*Math.cos(2*s)-2*Math.cos(3*s)-Math.cos(4*s);
+            const z=(Math.random()-0.5)*2;
+            points.push(new THREE.Vector3(x*3,y*3+15,z*3));
+        }
+    }
+    return points;
+}
+const heartParticles = createHeartParticles();
+const heartGeom = new THREE.BufferGeometry().setFromPoints(heartParticles);
+const heartColors=[];
+heartParticles.forEach(()=>heartColors.push(1,0,0)); // màu đỏ cố định
+heartGeom.setAttribute('color',new THREE.Float32BufferAttribute(heartColors,3));
+const heartMat = new THREE.PointsMaterial({vertexColors:true,size:0.35});
+const heart = new THREE.Points(heartGeom,heartMat);
+scene.add(heart);
+
+// === TRÁI TIM NHỎ BAY LUNG TUNG ===
+const miniHeartsCount = 50;
+const miniHearts = [];
+const miniGeom = new THREE.BufferGeometry();
+const miniPositions = new Float32Array(miniHeartsCount*3);
+const miniColors = new Float32Array(miniHeartsCount*3);
+for(let i=0;i<miniHeartsCount;i++){
+    const x=(Math.random()-0.5)*20;
+    const y=(Math.random()-0.5)*20;
+    const z=(Math.random()-0.5)*20;
+    miniPositions[i*3]=x;
+    miniPositions[i*3+1]=y;
+    miniPositions[i*3+2]=z;
+    miniColors[i*3]=1; miniColors[i*3+1]=0; miniColors[i*3+2]=0;
+    miniHearts.push({x,y,z,vx:(Math.random()-0.5)*0.5,vy:Math.random()*0.5+0.2,vz:(Math.random()-0.5)*0.5});
+}
+miniGeom.setAttribute('position',new THREE.BufferAttribute(miniPositions,3));
+miniGeom.setAttribute('color',new THREE.BufferAttribute(miniColors,3));
+const miniMat = new THREE.PointsMaterial({vertexColors:true,size:1.2});
+const miniPoints = new THREE.Points(miniGeom,miniMat);
+scene.add(miniPoints);
+
+// === TEXT XOAY NHIỀU VÒNG, KHOẢNG CÁCH DÀY ===
+function createTextSprite(text,color,size){
+    const canvas=document.createElement('canvas');
+    canvas.width=256; canvas.height=64;
+    const ctx=canvas.getContext('2d');
+    ctx.font=`bold ${size}px Arial`;
+    ctx.fillStyle=color;
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
+    ctx.fillText(text,canvas.width/2,canvas.height/2);
+    const texture=new THREE.CanvasTexture(canvas);
+    const material=new THREE.SpriteMaterial({map:texture,transparent:true});
+    const sprite=new THREE.Sprite(material);
+    sprite.scale.set(size/2,size/5,1);
+    return sprite;
+}
+const textGroups=[];
+const radii=[50,65,80,95,110,125,140];
+const colorsText=["#FFD700","#FF69B4","#00FFFF","#ADFF2F","#FF4500","#00BFFF","#FF1493"];
+radii.forEach((radius,idx)=>{
+    const group=new THREE.Group();
+    const message="CHÚC CỤC DÀNGTRUNG THU VUI VẺ ♥ ";
+    const size = 20 + idx*3;
+    for(let i=0;i<message.length;i+=1){ // chữ dày hơn
+        const sprite=createTextSprite(message[i],colorsText[idx%colorsText.length],size);
+        const angle=(i/message.length)*Math.PI*2;
+        sprite.position.set(radius*Math.cos(angle),-30,radius*Math.sin(angle));
+        sprite.lookAt(0,0,0);
+        group.add(sprite);
+    }
+    scene.add(group);
+    textGroups.push({group,speed:idx%2===0?0.0008+idx*0.0003:-0.0008-idx*0.0003});
+});
+
+// === SAO NỀN ===
+const stars=[];
+for(let i=0;i<300;i++) stars.push(new THREE.Vector3((Math.random()-0.5)*600,(Math.random()-0.5)*400,(Math.random()-0.5)*600));
+const starGeom=new THREE.BufferGeometry().setFromPoints(stars);
+const starMat=new THREE.PointsMaterial({color:0xffffff,size:0.8});
+const starPoints=new THREE.Points(starGeom,starMat);
+scene.add(starPoints);
+
+// === HẠT RƠI 1 MÀU ĐỎ NHỎ LI TI ===
+const rainCount=500;
+const rainParticles=[];
+const rainPositions=new Float32Array(rainCount*3);
+const rainColors=new Float32Array(rainCount*3);
+for(let i=0;i<rainCount;i++){
+    const x=(Math.random()-0.5)*400;
+    const y=Math.random()*400 +50;
+    const z=(Math.random()-0.5)*400;
+    rainPositions[i*3]=x; rainPositions[i*3+1]=y; rainPositions[i*3+2]=z;
+    rainColors[i*3]=1; rainColors[i*3+1]=0; rainColors[i*3+2]=0;
+    rainParticles.push({x,y,z,vy:Math.random()*0.5+0.5});
+}
+const rainGeom=new THREE.BufferGeometry();
+rainGeom.setAttribute('position',new THREE.BufferAttribute(rainPositions,3));
+rainGeom.setAttribute('color',new THREE.BufferAttribute(rainColors,3));
+const rainMat=new THREE.PointsMaterial({vertexColors:true,size:0.25}); // li ti
+const rainPoints=new THREE.Points(rainGeom,rainMat);
+scene.add(rainPoints);
+
+// === ANIMATION ===
+const clock=new THREE.Clock();
+function animate(){
+    requestAnimationFrame(animate);
+    const t=clock.getElapsedTime();
+
+    // Tim đập
+    const scale=1+0.1*Math.sin(t*3);
+    heart.scale.set(scale,scale,scale);
+
+    // Chữ xoay chậm
+    textGroups.forEach(tg=>tg.group.rotation.y+=tg.speed);
+
+    // Hạt rơi xuống
+    for(let i=0;i<rainCount;i++){
+        rainParticles[i].y -= rainParticles[i].vy;
+        if(rainParticles[i].y < -50){
+            rainParticles[i].y = Math.random()*400 +50;
+            rainParticles[i].x = (Math.random()-0.5)*400;
+            rainParticles[i].z = (Math.random()-0.5)*400;
+        }
+        rainPositions[i*3+0] = rainParticles[i].x;
+        rainPositions[i*3+1] = rainParticles[i].y;
+        rainPositions[i*3+2] = rainParticles[i].z;
+    }
+    rainGeom.attributes.position.needsUpdate = true;
+
+    // Trái tim mini bay
+    for(let i=0;i<miniHeartsCount;i++){
+        miniHearts[i].x+=miniHearts[i].vx;
+        miniHearts[i].y+=miniHearts[i].vy;
+        miniHearts[i].z+=miniHearts[i].vz;
+        if(miniHearts[i].y>100 || miniHearts[i].y<-50) miniHearts[i].y=Math.random()*20;
+        miniPositions[i*3]=miniHearts[i].x;
+        miniPositions[i*3+1]=miniHearts[i].y;
+        miniPositions[i*3+2]=miniHearts[i].z;
+    }
+    miniGeom.attributes.position.needsUpdate=true;
+
+    // Sao nhấp nháy
+    starMat.opacity=0.5+0.5*Math.sin(t*2);
+    starMat.transparent=true;
+
+    renderer.render(scene,camera);
+}
+animate();
+
+// === RESIZE ===
+window.addEventListener("resize",()=>{
+    camera.aspect=innerWidth/innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth,innerHeight);
+});
+</script>
+</body>
+</html>
